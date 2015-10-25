@@ -1,0 +1,29 @@
+---
+title: "Practical Marchine Learning Project"
+author: "Kevin Chien"
+date: "October 22, 2015"
+output: html_document
+---
+### The Pratical Machine Learning Project
+
+The project goal is to use data from accelerometers on the belt, forearm, arm, and dumbell of 6 participants to create model for machine learning to predict personal activity.   
+
+
+
+```{r, echo=FALSE}
+library(caret); library(ggplot2); library(dplyr);
+
+tdata2 <- read.csv("pml-training2.csv", header=TRUE) #read preproc data
+acceldata2 <- tdata2[grep("accel|classe", colnames(tdata2))] #select accel and classe data
+inTrain <- createDataPartition(y=tdata2$classe, p=0.7, list=FALSE) #prep data
+training <- acceldata2[inTrain,]
+testiing <- acceldata2[-inTrain,]
+dim(training)
+```  
+
+Review the data in the training set
+```{r, echo=FALSE}
+boxplot(training)
+```
+
+Note that the `echo = FALSE` parameter was added to the code chunk to prevent printing of the R code that generated the plot.
