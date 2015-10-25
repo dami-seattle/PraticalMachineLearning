@@ -26,4 +26,8 @@ Review the data in the training set
 boxplot(training)
 ```
 
-Note that the `echo = FALSE` parameter was added to the code chunk to prevent printing of the R code that generated the plot.
+Using the Random Forest model to train the training set
+
+```{r, echo=FALSE}
+modFit <- train(training$classe ~.,data = training, method="rf", prod=TRUE)
+```  
