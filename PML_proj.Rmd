@@ -1,33 +1,128 @@
 ---
 title: "Practical Marchine Learning Project"
-author: "Kevin Chien"
-date: "October 22, 2015"
+date: "November 20, 2015"
 output: html_document
 ---
-### The Pratical Machine Learning Project
 
-The project goal is to use data from accelerometers on the belt, forearm, arm, and dumbell of 6 participants to create model for machine learning to predict personal activity.   
+## Background
+The project goal is to use personal activity data collected from accelerometers on the belt, forearm, arm, and dumbell of 6 participants to create model using machine learning method to predict the accuracy.   
 
+The data for this project come from this source: http://groupware.les.inf.puc-rio.br/har.
 
+Reference 
+Velloso, E.; Bulling, A.; Gellersen, H.; Ugulino, W.; Fuks, H. Qualitative Activity Recognition of Weight Lifting Exercises. Proceedings of 4th International Conference in Cooperation with SIGCHI (Augmented Human '13) . Stuttgart, Germany: ACM SIGCHI, 2013. 
 
+Read more: http://groupware.les.inf.puc-rio.br/har#ixzz3rvD1gkyq
+
+## Study design
+1. Prepare the data
+2. Partition the data in training and test set
+3. Build the model 
+4. Evaluate the model
+
+### Loading the package for the study
 ```{r, echo=FALSE}
-library(caret); library(ggplot2); library(dplyr);
+library(caret); library(corrplot); library(dplyr);
+```  
 
-tdata2 <- read.csv("pml-training2.csv", header=TRUE) #read preproc data
-acceldata2 <- tdata2[grep("accel|classe", colnames(tdata2))] #select accel and classe data
-inTrain <- createDataPartition(y=tdata2$classe, p=0.7, list=FALSE) #prep data
+## Prepare the data
+Download and import the data from below source
+The training data for this project are available here: 
+https://d396qusza40orc.cloudfront.net/predmachlearn/pml-training.csv
+
+The test data are available here: 
+https://d396qusza40orc.cloudfront.net/predmachlearn/pml-testing.csv
+```{r, echo=FALSE}
+tdata <- read.csv("pml-training.csv", header=TRUE) #read training data
+str(tdata)
+summary(tdata)
+```  
+
+From the review there are lots of NA require cleaning. We need remove them first.
+```{r}
+#select features and classe data
+tdata2 <- tdata[, colSums(is.na(tdata)) == 0]
+acceldata2 <- tdata2[grep("gyros|accel|magnet|classe", colnames(tdata2))] 
+dim(acceldata2)
+#read testing data
+testdata <- read.csv("pml-testing.csv", header=TRUE) 
+dim(testdata)
+```  
+
+## Partition the data in training and test set
+Partition the data to training and testing set using 70% setting
+```{r}
+#Partition data
+set.seed(123)
+inTrain <- createDataPartition(y=tdata2$classe, p=0.7, list=FALSE) 
 training <- acceldata2[inTrain,]
-testiing <- acceldata2[-inTrain,]
+testing <- acceldata2[-inTrain,]
 dim(training)
 ```  
 
-Review the data in the training set
-```{r, echo=FALSE}
-boxplot(training)
+Review the correlation in the training set
+```{r}
+cordata <- cor(training[,-41])
+corrplot(cordata, method = "circle", type = "lower", order = "FPC")
 ```
 
-Using the Random Forest model to train the training set
+## Build the model 
+First I select the method and fit the model. Then I will review the result from GBM and Random Forest models then select one with better accuracy for final prediction 
 
-```{r, echo=FALSE}
-modFit <- train(training$classe ~.,data = training, method="rf", prod=TRUE)
+### Set cross-validation and fit the model
+Using k-fold and has 5 observations for the cross-validation
+```{r}
+fitcontrol <- trainControl(method= "CV", number = 5)
+
+#Train two models
+modFitR <- train(training$classe ~., data = training, trControl = fitcontrol, method = "rf", verbose = FALSE)
+print(modFitR, digits = 3)
+modFitR$finalModel
+
+modFitG <- train(training$classe ~., data = training, trControl = fitcontrol, method = "gbm", verbose = FALSE)
+print(modFitG, digits = 3)
+modFitG$finalModel
 ```  
+
+## Evaluate the model
+### Predict the testing set data
+```{r}
+predR <- predict(modFitR, testing)
+predG <- predict(modFitG, testing)
+```  
+
+### Calculate the accuracy
+```{r}
+cmR <- confusionMatrix(predR, testing$classe)
+cmG <- confusionMatrix(predG, testing$classe)
+
+accuracy <- c(cmR$overall[[1]], cmG$overall[[1]])
+accuracy
+```  
+
+Comparing both prediction results the Random Forest model has better accuracy which will be selected for predicting the test cases.
+
+### Out of sample error
+The out of sample error is (1-accuracy)*100 so the error is
+```{r}
+(1-cmR$overall[[1]])*100
+```
+
+### Predict the testing set data for 20 test cases
+Using provided script I will create pridction result for submission
+```{r}
+class <- predict(modFitR, testdata)
+
+answers <- class
+pml_write_files = function(x){
+  n = length(x)
+  for(i in 1:n){
+    filename = paste0("problem_id_",i,".txt")
+    write.table(x[i],file=filename,quote=FALSE,row.names=FALSE,col.names=FALSE)
+  }
+}
+
+#upload result
+pml_write_files(answers)
+```  
+
