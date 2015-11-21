@@ -654,6 +654,7 @@ modFitR &lt;- train(training$classe ~., data = training, trControl = fitcontrol,
 ## C    0   29 2362    5    0 0.014190317
 ## D    6    0   76 2168    2 0.037300178
 ## E    1    3    1    6 2514 0.004356436</code></pre>
+<p>From the result the OOB estimate of  error rate: 1.46%</p>
 <pre class="r"><code>modFitG &lt;- train(training$classe ~., data = training, trControl = fitcontrol, method = &quot;gbm&quot;, verbose = FALSE)</code></pre>
 <pre><code>## Loading required package: gbm</code></pre>
 <pre><code>## Warning: package 'gbm' was built under R version 3.2.2</code></pre>
